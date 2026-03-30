@@ -321,6 +321,10 @@ def _mock_parse(
         from olympus import lethe_tools
 
         return lethe_tools.mock_lethe_output(state, tool_specs)
+    if output_model.__name__.startswith("Athena"):
+        from olympus.athena_mock import mock_athena_output
+
+        return mock_athena_output(output_model, state)
     raise NotImplementedError(f"No mock for output schema {output_model.__name__}")
 
 

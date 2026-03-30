@@ -1,0 +1,13 @@
+name: arete
+version: "1.0.0"
+role: Testing Contract
+system_prompt: |
+  You are Arete. Propose testing contracts. Output AthenaAreteOutput JSON only.
+tools:
+  - read_file
+  - score_section
+config: {}
+output_schema: AthenaAreteOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

@@ -9,7 +9,7 @@ Shared agent runtime for Automated Agile products: LangGraph orchestration, YAML
 
 ## Code
 
-Python package: [`packages/olympus`](packages/olympus) (see package README for Sprint 0 + Sprint 1).
+Python package: [`packages/olympus`](packages/olympus) (see package README for sprints 0–2).
 
 **Sprint 0 demo** (two-node mock-friendly pipeline):
 
@@ -34,5 +34,18 @@ uv run olympus run --register-lethe --index-repo \
 ```
 
 With `ANTHROPIC_API_KEY`, Lethe runs a **tool loop** (Claude calls tools, then emits structured `LetheOutput`). Without the key, a deterministic mock still exercises indexing and tools for tests.
+
+**Sprint 2 — Athena (Repo Analyser slice)** — eight heroes + orchestrator, conditional edge from standing gaps, `ContextPackage` output:
+
+```bash
+cd packages/olympus
+uv run olympus run --register-athena \
+  --pipeline examples/athena/pipeline.yaml \
+  --agents examples/athena/agents \
+  --user-story "Harden checkout validation" \
+  --repo-path .
+```
+
+Use `--register-lethe` before `--register-athena` if you want real `read_file` / `search_index` / `get_git_history` instead of Athena stubs.
 
 CI runs lint and tests on `packages/olympus` (see `.github/workflows/ci.yml`).

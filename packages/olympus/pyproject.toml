@@ -1,6 +1,6 @@
 [project]
 name = "olympus"
-version = "0.2.0"
+version = "0.3.0"
 description = "Olympus agent framework — LangGraph runtime with YAML agents and append-only run logs"
 readme = "README.md"
 requires-python = ">=3.11"

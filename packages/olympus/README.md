@@ -6,6 +6,7 @@ LangGraph-based Olympus runtime: YAML agents, optional Claude + **tool loop**, a
 
 - **0.1.x** — Sprint 0 (demo pipeline, structured output, no tool execution loop).
 - **0.2.x** — Sprint 1 (Lethe: Chroma, embeddings, Chonkie + tree-sitter, Merkle, `read_file` / `search_index` / `get_git_history`, tool loop when using the API).
+- **0.3.x** — Sprint 2 (Athena: full hero YAML graph, `AthenaPipelineState`, stub tools from the architecture doc, conditional `standing_knowledge_*`, orchestrator `ContextPackage`).
 
 ## Setup
 
@@ -41,6 +42,18 @@ uv run olympus run --register-lethe --index-repo \
 - **`--index-repo`** — chunks + embeds the repo, sets **tool context** for the graph run, merges `merkle_root` / `indexed_chunks` into final state.
 
 With `ANTHROPIC_API_KEY`, the agent uses **tools** then returns structured JSON. Without it, tests and CI use a **mock** that still runs real indexing + tools when context is set.
+
+## Sprint 2 — Athena (Repo Analyser)
+
+```bash
+uv run olympus run --register-athena \
+  --pipeline examples/athena/pipeline.yaml \
+  --agents examples/athena/agents \
+  --user-story "Your story" \
+  --repo-path .
+```
+
+`--register-athena` registers Pydantic state/output models, stub tools (unless Lethe already registered overlapping tool names), and pipeline conditions.
 
 ## Inspect a run
 

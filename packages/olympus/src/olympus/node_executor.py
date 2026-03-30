@@ -106,6 +106,9 @@ def make_router_fn(pipeline: PipelineConfig, from_node_id: str):
                 return e.to
         if unconditional:
             return unconditional[0].to
-        raise RuntimeError(f"No matching edge from {from_node_id!r}")
+        raise RuntimeError(
+            f"No matching edge from {from_node_id!r}: "
+            f"add an unconditional fallback or cover all cases with conditions."
+        )
 
     return route

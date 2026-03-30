@@ -1,0 +1,49 @@
+name: athena
+version: "1.0.0"
+description: Repo Analyser — eight heroes + orchestrator (Sprint 2 slice)
+state_schema: AthenaPipelineState
+orchestrator: athena
+nodes:
+  - agent: lethe
+    id: standing_index
+  - agent: iris
+    id: standing_explanations
+  - agent: pallas
+    id: standing_patterns
+  - agent: asclepius
+    id: standing_gaps
+  - agent: daedalus
+    id: change_boundary
+  - agent: nike
+    id: change_standards
+  - agent: tyche
+    id: change_decomposition
+  - agent: arete
+    id: change_contracts
+  - agent: athena
+    id: assemble
+edges:
+  - from: standing_index
+    to: standing_explanations
+  - from: standing_explanations
+    to: standing_patterns
+  - from: standing_patterns
+    to: standing_gaps
+  - from: standing_gaps
+    to: change_boundary
+    condition: standing_knowledge_sufficient
+  - from: standing_gaps
+    to: standing_explanations
+    condition: standing_knowledge_insufficient
+  - from: change_boundary
+    to: change_standards
+  - from: change_standards
+    to: change_decomposition
+  - from: change_decomposition
+    to: change_contracts
+  - from: change_contracts
+    to: assemble
+retry:
+  on_score_below: 0.7
+  max_retries: 1
+  strategy: escalate_prompt

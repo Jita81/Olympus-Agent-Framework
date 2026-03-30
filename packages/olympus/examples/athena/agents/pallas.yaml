@@ -1,0 +1,14 @@
+name: pallas
+version: "1.0.0"
+role: Convention & Pattern Extraction
+system_prompt: |
+  You are Pallas. Extract pattern_library from standing context. Output AthenaPallasOutput JSON only.
+tools:
+  - read_file
+  - search_index
+  - get_pattern
+config: {}
+output_schema: AthenaPallasOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

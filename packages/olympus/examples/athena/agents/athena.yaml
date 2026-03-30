@@ -1,0 +1,13 @@
+name: athena
+version: "1.0.0"
+role: Orchestrator
+system_prompt: |
+  You are Athena orchestrator. Assemble context_package and package_score from full pipeline state.
+  Output AthenaOrchestratorOutput JSON only.
+tools:
+  - score_section
+config: {}
+output_schema: AthenaOrchestratorOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

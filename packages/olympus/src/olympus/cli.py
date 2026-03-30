@@ -61,6 +61,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Register LethePipelineState / LetheOutput (Sprint 1)",
     )
     run_p.add_argument(
+        "--register-athena",
+        action="store_true",
+        help="Register Athena pipeline state, hero outputs, stub tools, conditions (Sprint 2)",
+    )
+    run_p.add_argument(
         "--index-repo",
         action="store_true",
         help="Build Chroma index from repo_path in initial state before running agents",
@@ -69,7 +74,18 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-path",
         type=Path,
         default=None,
-        help="For Lethe: repository root to index (default: cwd)",
+        help="For Lethe / Athena: repository root (default: cwd)",
+    )
+    run_p.add_argument(
+        "--user-story",
+        default="Improve error handling in the API layer",
+        help="For AthenaPipelineState: user_story field",
+    )
+    run_p.add_argument(
+        "--acceptance-criteria",
+        action="append",
+        default=[],
+        help="For Athena: acceptance criterion (repeat flag for multiple)",
     )
     run_p.add_argument(
         "--index-query",
@@ -113,6 +129,18 @@ def main(argv: list[str] | None = None) -> int:
         if pcfg.state_schema == "LethePipelineState":
             rp = (args.repo_path or Path.cwd()).resolve()
             initial = state_cls(repo_path=str(rp), index_query=args.index_query)
+        elif pcfg.state_schema == "AthenaPipelineState":
+            rp = (args.repo_path or Path.cwd()).resolve()
+            ac = (
+                list(args.acceptance_criteria)
+                if args.acceptance_criteria
+                else ["Errors are logged"]
+            )
+            initial = state_cls(
+                user_story=args.user_story,
+                acceptance_criteria=ac,
+                repo_path=str(rp),
+            )
         else:
             initial = state_cls(task=args.task)
 
@@ -124,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
             db_path=args.db,
             register_demo=False,
             register_lethe=False,
+            register_athena=args.register_athena,
             index_repo=args.index_repo,
             chroma_path=args.chroma_path,
             embedding_model=args.embedding_model,

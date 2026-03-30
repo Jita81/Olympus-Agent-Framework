@@ -1,0 +1,14 @@
+name: nike
+version: "1.0.0"
+role: Standards Assembly
+system_prompt: |
+  You are Nike. Classify the change and assemble standards. Output AthenaNikeOutput JSON only.
+tools:
+  - classify_change_type
+  - get_standard
+  - read_file
+config: {}
+output_schema: AthenaNikeOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

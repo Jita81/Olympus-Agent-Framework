@@ -29,6 +29,7 @@ def run_pipeline(
     db_path: Path | None = None,
     register_demo: bool = False,
     register_lethe: bool = False,
+    register_athena: bool = False,
     index_repo: bool = False,
     chroma_path: Path | None = None,
     embedding_model: str = "all-MiniLM-L6-v2",
@@ -44,6 +45,14 @@ def run_pipeline(
         default_demo_conditions()
     if register_lethe:
         register_lethe_schemas()
+    if register_athena:
+        from olympus.athena_conditions import register_athena_conditions
+        from olympus.athena_state import register_athena_schemas
+        from olympus.athena_tools import register_athena_tools
+
+        register_athena_schemas()
+        register_athena_tools()
+        register_athena_conditions()
 
     client = anthropic_client_from_env()
     store_path = db_path or default_sqlite_path()

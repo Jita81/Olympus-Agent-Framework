@@ -102,6 +102,8 @@ For each agent (Iris, Pallas, Asclepius, Daedalus, Nike, Tyche, Arete, orchestra
 
 **Exit criteria:** Full Athena pipeline produces the intended structured context package type; run log captures all heroes; retry policies validated on at least one edge case.
 
+**Implemented in repo (Sprint 2 slice):** `packages/olympus/examples/athena/` (`pipeline.yaml`, nine agent YAMLs), `olympus.athena_state`, `olympus.athena_tools` (stubs), `olympus.athena_conditions`, `olympus.athena_mock` for no-API-key runs. CLI: `--register-athena`. Tests cover full mock graph (9 calls), conditions, and a forced retry path (`tests/test_retry_policy.py`).
+
 ---
 
 ## Final phase — Tuning Studio
