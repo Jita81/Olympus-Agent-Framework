@@ -124,6 +124,8 @@ For each agent (Iris, Pallas, Asclepius, Daedalus, Nike, Tyche, Arete, orchestra
 
 **Exit criteria:** End-to-end flow: edit prompt → new version → run pipeline → view log → submit feedback → see aggregates.
 
+**Implemented in repo:** FastAPI app in `olympus.api` + `olympus.studio_store` (versioned agent/pipeline configs, `run_events` for live polling), `olympus-studio` CLI, WebSocket `GET /runs/{run_id}/live`, REST surface per architecture doc (agents, pipelines, runs, feedback, isolation test, experiments, performance). React UI in `packages/tuning-ui` (Vite) proxies to the API. Set `OLYMPUS_STUDIO=1` when using `olympus run` from the shell to persist run lifecycle events to the same SQLite DB.
+
 ---
 
 ## Dependency map (technical stack)

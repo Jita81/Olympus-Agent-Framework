@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -17,6 +18,7 @@ from olympus.schema_registry import (
     register_lethe_schemas,
     resolve_state_schema,
 )
+from olympus.studio_store import StudioStore
 from olympus.tool_context import reset_tool_context, set_tool_context
 
 
@@ -33,6 +35,7 @@ def run_pipeline(
     index_repo: bool = False,
     chroma_path: Path | None = None,
     embedding_model: str = "all-MiniLM-L6-v2",
+    studio_store: StudioStore | None = None,
 ) -> tuple[BaseModel, str]:
     """
     Execute a pipeline once. Returns (final_state, run_id).
@@ -57,12 +60,27 @@ def run_pipeline(
     client = anthropic_client_from_env()
     store_path = db_path or default_sqlite_path()
     store = RunStore(store_path)
+    if studio_store is None and os.environ.get("OLYMPUS_STUDIO", "").strip() == "1":
+        studio_store = StudioStore(store_path)
+    if studio_store is not None:
+        studio_store.sync_agents_from_disk(agents_dir)
+        studio_store.sync_pipeline_from_disk(pipeline_path)
+
     pipeline_cfg = load_pipeline(pipeline_path)
+    if studio_store is not None:
+        pipeline_cfg = studio_store.resolve_pipeline_config(pipeline_path, fallback=pipeline_cfg)
+
     run_id = store.start_run(
         pipeline_name=pipeline_cfg.name,
         pipeline_version=pipeline_cfg.version,
         input_payload=initial_state.model_dump(),
     )
+    if studio_store is not None:
+        studio_store.append_run_event(
+            run_id=run_id,
+            event_type="run_started",
+            payload={"pipeline": pipeline_cfg.name},
+        )
 
     app, ctx = load_context_and_compile(
         pipeline_path=pipeline_path,
@@ -71,6 +89,7 @@ def run_pipeline(
         run_id=run_id,
         client=client,
         model=model,
+        studio_store=studio_store,
     )
 
     token = None
@@ -111,5 +130,11 @@ def run_pipeline(
     scores = [c.score for c in calls if c.score is not None]
     overall = sum(scores) / len(scores) if scores else None
     store.complete_run(run_id, overall_score=overall)
+    if studio_store is not None:
+        studio_store.append_run_event(
+            run_id=run_id,
+            event_type="run_completed",
+            payload={"overall_score": overall},
+        )
 
     return final, run_id

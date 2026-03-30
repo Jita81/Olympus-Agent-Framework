@@ -9,6 +9,7 @@ from anthropic import Anthropic
 
 from olympus.models_config import AgentConfig, PipelineConfig
 from olympus.run_store import RunStore
+from olympus.studio_store import StudioStore
 
 
 @dataclass
@@ -20,6 +21,7 @@ class RuntimeContext:
     run_store: RunStore
     run_id: str
     max_tokens: int = 1024
+    studio_store: StudioStore | None = None
 
 
 def default_sqlite_path(base_dir: Path | None = None) -> Path:

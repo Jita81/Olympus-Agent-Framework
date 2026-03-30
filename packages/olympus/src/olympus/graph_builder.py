@@ -11,6 +11,7 @@ from olympus.models_config import PipelineConfig
 from olympus.node_executor import make_agent_node, make_router_fn
 from olympus.runtime_context import RuntimeContext
 from olympus.schema_registry import resolve_state_schema
+from olympus.studio_store import StudioStore
 
 
 def _entry_node_id(pipeline: PipelineConfig) -> str:
@@ -80,9 +81,16 @@ def load_context_and_compile(
     run_id: str,
     client,
     model: str,
+    studio_store: StudioStore | None = None,
 ):
-    pipeline = load_pipeline(pipeline_path)
-    agents = load_agents_dir(agents_dir)
+    pipeline_disk = load_pipeline(pipeline_path)
+    agents_disk = load_agents_dir(agents_dir)
+    if studio_store is not None:
+        pipeline = studio_store.resolve_pipeline_config(pipeline_path, fallback=pipeline_disk)
+        agents = studio_store.merge_agent_configs(agents_disk)
+    else:
+        pipeline = pipeline_disk
+        agents = agents_disk
     ctx = RuntimeContext(
         agents=agents,
         pipeline=pipeline,
@@ -90,5 +98,6 @@ def load_context_and_compile(
         model=model,
         run_store=run_store,
         run_id=run_id,
+        studio_store=studio_store,
     )
     return build_compiled_graph(ctx), ctx

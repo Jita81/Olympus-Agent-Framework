@@ -7,6 +7,7 @@ LangGraph-based Olympus runtime: YAML agents, optional Claude + **tool loop**, a
 - **0.1.x** — Sprint 0 (demo pipeline, structured output, no tool execution loop).
 - **0.2.x** — Sprint 1 (Lethe: Chroma, embeddings, Chonkie + tree-sitter, Merkle, `read_file` / `search_index` / `get_git_history`, tool loop when using the API).
 - **0.3.x** — Sprint 2 (Athena: full hero YAML graph, `AthenaPipelineState`, stub tools from the architecture doc, conditional `standing_knowledge_*`, orchestrator `ContextPackage`).
+- **0.4.x** — Tuning Studio: FastAPI (`olympus.api`), versioned configs in SQLite (`studio_store`), `POST /pipelines/{name}/run`, WebSocket live stream, `olympus-studio` CLI; React UI in `../tuning-ui`.
 
 ## Setup
 
@@ -54,6 +55,14 @@ uv run olympus run --register-athena \
 ```
 
 `--register-athena` registers Pydantic state/output models, stub tools (unless Lethe already registered overlapping tool names), and pipeline conditions.
+
+## Tuning Studio API
+
+```bash
+uv run olympus-studio --port 8765
+```
+
+Open `/docs` for OpenAPI. The UI in `packages/tuning-ui` proxies to this server. Pipeline runs triggered via the API use the Studio store so **edited prompts** apply. For CLI runs, set `OLYMPUS_STUDIO=1` to record `run_started` / `run_completed` and per-node events when a shared DB is used.
 
 ## Inspect a run
 

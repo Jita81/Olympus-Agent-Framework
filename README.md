@@ -48,4 +48,21 @@ uv run olympus run --register-athena \
 
 Use `--register-lethe` before `--register-athena` if you want real `read_file` / `search_index` / `get_git_history` instead of Athena stubs.
 
-CI runs lint and tests on `packages/olympus` (see `.github/workflows/ci.yml`).
+**Tuning Studio (API + UI)** — FastAPI server and optional React shell:
+
+```bash
+cd packages/olympus
+uv sync --extra dev
+uv run olympus-studio --port 8765
+# OpenAPI: http://127.0.0.1:8765/docs
+```
+
+```bash
+cd packages/tuning-ui
+npm install
+npm run dev   # proxies /api and /ws to olympus-studio
+```
+
+Set `OLYMPUS_STUDIO=1` when using `uv run olympus run …` so run start/complete events are written for the live WebSocket.
+
+CI runs Python tests in `packages/olympus` and builds `packages/tuning-ui` (see `.github/workflows/ci.yml`).

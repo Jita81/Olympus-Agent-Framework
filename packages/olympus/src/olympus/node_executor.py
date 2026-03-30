@@ -34,6 +34,16 @@ def make_agent_node(ctx: RuntimeContext, node_id: str, agent: AgentConfig):
         last_feedback = ""
 
         for attempt in range(max_retries + 1):
+            if ctx.studio_store is not None:
+                ctx.studio_store.append_run_event(
+                    run_id=ctx.run_id,
+                    event_type="node_started",
+                    payload={
+                        "node_id": node_id,
+                        "agent": agent.name,
+                        "attempt": attempt,
+                    },
+                )
             parsed, meta = run_agent_turn(
                 ctx.client,
                 agent=agent,
@@ -50,7 +60,7 @@ def make_agent_node(ctx: RuntimeContext, node_id: str, agent: AgentConfig):
 
             state_json = state.model_dump_json(indent=2)
             prompt_full = f"{agent.system_prompt}\n\n--- state ---\n{state_json}{suffix}"
-            ctx.run_store.append_agent_call(
+            call_id = ctx.run_store.append_agent_call(
                 run_id=ctx.run_id,
                 agent_name=agent.name,
                 agent_version=agent.version,
@@ -65,6 +75,18 @@ def make_agent_node(ctx: RuntimeContext, node_id: str, agent: AgentConfig):
                 score_feedback=feedback,
                 retry_count=attempt,
             )
+            if ctx.studio_store is not None:
+                ctx.studio_store.append_run_event(
+                    run_id=ctx.run_id,
+                    event_type="node_completed",
+                    payload={
+                        "node_id": node_id,
+                        "agent": agent.name,
+                        "call_id": call_id,
+                        "score": score,
+                        "retry_count": attempt,
+                    },
+                )
 
             if score >= threshold:
                 return _merge_updates(parsed)
