@@ -1,8 +1,8 @@
 # Olympus Agent Framework
 
-**Olympus** is the shared agent runtime for the Automated Agile product family: **YAML-defined agents**, **LangGraph** orchestration, **Claude** (Anthropic) with optional **tool loops**, and **append-only run logs**—matching the intent of the [Olympus architecture (PDF)](docs/olympus-framework-architecture.pdf) (v1.0, March 2026).
+**Olympus** is the shared agent runtime for the Automated Agile product family: **YAML-defined agents**, **LangGraph** orchestration, **Claude** (Anthropic) with optional **tool loops**, **append-only run logs**, and a **Tuning Studio** (FastAPI + React) for editing configs and inspecting runs—matching the intent of the [Olympus architecture (PDF)](docs/olympus-framework-architecture.pdf) (v1.0, March 2026).
 
-This repository implements the phased plan in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md). The sections below give a **full accounting of what is built versus that plan** on the default branch, what you can do today, and what lives on follow-up branches or remains future work.
+This repository implements the phased plan in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md). The sections below give a **full accounting of what is built versus that plan**, what you can do with it today, and what remains optional or future work.
 
 ---
 
@@ -10,24 +10,23 @@ This repository implements the phased plan in [`docs/BUILD_PLAN.md`](docs/BUILD_
 
 | Path | Role |
 |------|------|
-| [`packages/olympus`](packages/olympus) | Python package **`olympus`** — runtime, `olympus` CLI, tests. **v0.3.0** on `main`. |
+| [`packages/olympus`](packages/olympus) | Python package **`olympus`** (runtime, CLI, Tuning Studio API). Version **0.4.x**. |
+| [`packages/tuning-ui`](packages/tuning-ui) | **Tuning Studio** frontend (Vite + React + TypeScript). |
 | [`docs/`](docs) | Architecture PDF, build plan, and design references. |
-| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI: Ruff + pytest for `packages/olympus`. |
-
-**Tuning Studio** (FastAPI + SQLite-backed config versions + React UI) is implemented on branch **`cursor/tuning-studio`** (pending merge to `main`). After merge, `packages/tuning-ui` and `olympus-studio` appear here; CI also builds the UI.
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI: Ruff + pytest for `olympus`, `npm run build` for `tuning-ui`. |
 
 ---
 
 ## Plan vs implementation
 
-The architecture’s four pillars and how **`main`** delivers them today:
+The architecture’s four pillars and how this repo delivers them:
 
-| Architecture goal | On `main` today |
-|-------------------|-----------------|
-| **Agent-as-config** | Agents are YAML under `examples/*/agents/`, validated with Pydantic (`AgentConfig`). |
-| **Automatic observability** | Every agent node appends a row to **`agent_calls`** (prompt, response, tools, tokens, latency, score, retry count). **`runs`** + optional **`feedback`**. |
+| Architecture goal | In this repo |
+|---------------------|--------------|
+| **Agent-as-config** | Agents are YAML files under `examples/*/agents/`; validated with Pydantic (`AgentConfig`). Tuning Studio can create **new prompt/config versions** in SQLite without editing files; API runs merge current versions into the graph. |
+| **Automatic observability** | Every agent node writes an **append-only** row to `agent_calls` (prompt, response, tools, tokens, latency, score, retry count). Runs table + optional `run_events` for live UI. |
 | **Feed-forward context** | Pipeline `state_schema` is a Pydantic model; each node merges typed `output_schema` into shared state. |
-| **Tuning Studio API** | Spec’d in the PDF; **full REST + WebSocket + UI on branch `cursor/tuning-studio`** (not yet on `main`). |
+| **Tuning Studio API** | FastAPI in `olympus.api`: REST + **WebSocket** `/runs/{run_id}/live`; OpenAPI at `/docs`. React UI in `packages/tuning-ui`. |
 
 ### Phase 0 — Repository and tooling
 
@@ -35,7 +34,7 @@ The architecture’s four pillars and how **`main`** delivers them today:
 |------|--------|
 | Python **3.11+**, `packages/olympus` | Done |
 | **uv** + lockfile | Done |
-| CI (lint, tests) | Done |
+| CI (lint, tests, UI build) | Done |
 | `ANTHROPIC_API_KEY`; local Chroma + SQLite | Done |
 
 ### Sprint 0 — Olympus core
@@ -44,11 +43,11 @@ The architecture’s four pillars and how **`main`** delivers them today:
 |------|--------|--------|
 | Agent / pipeline YAML + Pydantic | Done | `loader.py`, `models_config.py` |
 | LangGraph `StateGraph` from YAML | Done | `graph_builder.py` |
-| Conditional edges | Done | `conditions.py` / `athena_conditions.py`; mixed conditional + unconditional from one node not supported |
+| Conditional edges | Done | Named conditions in `conditions.py` / `athena_conditions.py`; mixed conditional + unconditional from one node not supported |
 | `@tool` + Anthropic tool defs | Done | `tools.py` |
 | Claude **structured output** + optional **tool loop** | Done | `claude_runner.py`; mock path when API key unset |
-| Scoring + retries | Done | `widen_retrieval` / `flag_human` are prompt-level only |
-| SQLite run log | Done | `run_store.py`; feedback supported |
+| Scoring + retries (`escalate_prompt`, etc.) | Done | `widen_retrieval` / `flag_human` are prompt-level only |
+| SQLite run log | Done | `run_store.py`; feedback rows supported |
 | Demo pipeline | Done | `examples/demo/` |
 
 ### Sprint 1 — Lethe
@@ -65,24 +64,24 @@ The architecture’s four pillars and how **`main`** delivers them today:
 
 | Item | Status | Notes |
 |------|--------|--------|
-| Eight heroes + orchestrator YAML | Done | `examples/athena/` |
+| Eight heroes + orchestrator YAML | Done | `examples/athena/` (nine agent files + `pipeline.yaml`) |
 | `AthenaPipelineState` + outputs | Done | `athena_state.py` |
 | `standing_knowledge_*` condition | Done | `athena_conditions.py` |
 | `ContextPackage` / orchestrator | Done | Mock + real API paths |
-| Product tool surface for heroes | **Stubs** | `athena_tools.py`; overlaps defer to Lethe when registered |
+| Product tool surface for heroes | **Stubs** | `athena_tools.py` defers to Lethe for overlapping names when registered |
 | Full Iris/Pallas “real” tools | Not product-complete | Stubs + Lethe trio where wired |
 
 ### Tuning Studio (final phase in plan)
 
-| Item | On `main` | On `cursor/tuning-studio` (merge pending) |
-|------|-----------|------------------------------------------|
-| REST: agents, pipelines, runs, feedback | — | Done (`olympus.api`, `studio_store`) |
-| Isolation test, experiments, promote, performance | — | Done |
-| WebSocket `/runs/{id}/live`, `run_events` | — | Done |
-| `olympus-studio` CLI, `OLYMPUS_STUDIO=1` | — | Done |
-| React UI (`packages/tuning-ui`) | — | Done |
-| CI: `npm run build` for UI | — | Done |
-| **MCP server** | — | **Not built** (optional in plan) |
+| Item | Status | Notes |
+|------|--------|--------|
+| REST: agents, pipelines, runs, feedback | Done | See **API surface** below |
+| Isolation test `POST /agents/{name}/test` | Done | |
+| Experiments + promote | Done | Store + rollback winner; **no auto dual-run executor** |
+| Performance aggregates | Done | Basic rollups from SQLite |
+| WebSocket live runs | Done | Polls `run_events`; use `OLYMPUS_STUDIO=1` on CLI for same DB |
+| React UI | Done | Minimal: agents, runs, demo run, feedback sample, live stream |
+| **MCP server** for context packages | **Not built** | Optional in plan |
 
 ### Explicit non-goals (architecture)
 
@@ -90,31 +89,55 @@ Still respected: no cloud execution of customer source for indexing; no LLM fine
 
 ---
 
-## What you can do today (on `main`)
+## What you can do today (capabilities)
 
 ### Run pipelines from the CLI
 
-- **Demo:** `--register-demo`, `examples/demo/pipeline.yaml`.
-- **Lethe:** `--register-lethe --index-repo`, `examples/lethe/`.
-- **Athena:** `--register-athena`, `examples/athena/` (mocks without API key).
-- Register **Lethe before Athena** when you want real `read_file` / `search_index` / `get_git_history` instead of stubs for overlapping names.
+- **Demo** (two nodes, mock-friendly): `--register-demo`, `examples/demo/pipeline.yaml`.
+- **Lethe** (index + tools): `--register-lethe --index-repo`, `examples/lethe/`.
+- **Athena** (full graph, mocks without API key): `--register-athena`, `examples/athena/`.
+- Combine **Lethe + Athena** so overlapping tools use real implementations: register Lethe before Athena in code or ensure Lethe tools are loaded first.
 
-### Inspect runs
+### Run the Tuning Studio
 
-```bash
-uv run olympus show-run <run_id>
-```
+1. **API** (from `packages/olympus`):
 
-### After Tuning Studio merges
+   ```bash
+   uv sync --extra dev
+   uv run olympus-studio --port 8765
+   ```
 
-You will run **`uv run olympus-studio`**, open **`/docs`**, and use **`packages/tuning-ui`** with Vite dev proxy—see that branch’s `packages/olympus/README.md` for exact commands.
+   Open **http://127.0.0.1:8765/docs** for OpenAPI.
+
+2. **UI** (from `packages/tuning-ui`):
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+   Vite proxies `/api` and `/ws` to the API.
+
+3. **CLI runs + live events**: use the **same** SQLite path as the server and `OLYMPUS_STUDIO=1` so `run_started`, `run_completed`, and per-node events are written for the WebSocket.
+
+### API surface (high level)
+
+Aligned with the architecture doc’s Tuning Studio section:
+
+- **Agents:** `GET/PUT` list, detail, versions, prompt, config, rollback; `POST .../test`; performance + feedback slices.
+- **Pipelines:** list, get YAML, put YAML; `POST /pipelines/{name}/run` with body flags (`register_demo`, `register_lethe`, `register_athena`, `index_repo`) and initial state.
+- **Runs:** list, detail, call detail, feedback; **WebSocket** `/runs/{run_id}/live`.
+- **Experiments:** create, get, promote (winner `version_id` in body).
 
 ---
 
-## Quick start (`main`)
+## Quick start commands
 
 ```bash
+# Install runtime + dev tools
 cd packages/olympus && uv sync --extra dev
+
+# Unit tests (includes API tests with TestClient)
 uv run pytest -q
 uv run ruff check src tests
 ```
@@ -127,7 +150,7 @@ uv run olympus run --register-demo \
   --agents examples/demo/agents
 ```
 
-**Lethe** (first run may download embedding weights)
+**Lethe** (first sync may download embedding weights)
 
 ```bash
 uv run olympus run --register-lethe --index-repo \
@@ -151,41 +174,43 @@ With **`ANTHROPIC_API_KEY`**, Claude runs with tool loops where configured; with
 
 ---
 
-## Environment variables (`main`)
+## Environment variables
 
 | Variable | Purpose |
 |----------|---------|
 | `ANTHROPIC_API_KEY` | Real Claude calls; omit for mocks in tests/demos. |
-
-*(After Tuning Studio merge: `OLYMPUS_STUDIO`, `OLYMPUS_MODEL`, and `olympus-studio` — see merged README / package docs.)*
+| `OLYMPUS_STUDIO=1` | When set, `olympus run` attaches a `StudioStore` and writes **run_events** (for WebSocket) to the configured SQLite DB. |
+| `OLYMPUS_MODEL` | Optional override for default Claude model (used by `olympus-studio`). |
 
 ---
 
-## Technology stack (as on `main`)
+## Technology stack (as implemented)
 
 | Layer | Technology |
 |-------|------------|
 | Runtime | Python 3.11+ |
 | Orchestration | LangGraph |
-| LLM | Anthropic Claude |
+| LLM | Anthropic Claude (`messages.parse`, tool loop via `messages.create`) |
 | Vector / local search | ChromaDB, sentence-transformers |
 | Chunking | Chonkie, tree-sitter, Merkle directory hash |
 | Config / state | YAML + Pydantic |
-| Persistence | SQLite (runs, calls, feedback) |
+| Persistence | SQLite (runs, calls, feedback, studio versions, run_events) |
+| API | FastAPI, Uvicorn, WebSocket |
+| UI | React, TypeScript, Vite |
 | Packaging | uv |
 
-**Planned with Tuning Studio merge:** FastAPI, Uvicorn, WebSocket, React (Vite). **PostgreSQL** for runs remains a future option per the plan.
+**PostgreSQL** for runs is listed in the plan as a later option; the code is still SQLite-first.
 
 ---
 
 ## Known limitations (honest scope)
 
-- **Tool loop** — Implemented for Anthropic; long chains / limits may need production tuning.
-- **Athena** — Hero tools are largely **stubs**; depth grows via YAML + new tool modules.
-- **Experiments** — Full A/B automation not product-complete until Studio branch semantics land on `main`.
-- **MCP server** — Not in this repo (optional in architecture).
-- **ADO platform** agents / sub-pipeline linking — Out of scope here.
-- **Graph builder** — Cannot mix unconditional and conditional outgoing edges from the same node (see package README).
+- **Tool loop** is implemented for the Anthropic path; edge cases (very long tool chains, provider limits) may need tuning in production.
+- **Athena hero tools** are largely **stubs**; full product depth is “YAML + tools” growth on top of the framework.
+- **Experiments** persist metadata; **automatic A/B execution and scoring** is not a full product workflow yet.
+- **MCP server** for context packages is **not** in this repo.
+- **ADO platform** eight agents / sub-pipeline linking is **out of scope** for this repository (framework only).
+- **Conditional routing:** one node cannot mix unconditional and conditional outgoing edges in the current builder (documented in package README).
 
 ---
 
@@ -194,13 +219,14 @@ With **`ANTHROPIC_API_KEY`**, Claude runs with tool loops where configured; with
 | Document | Contents |
 |----------|----------|
 | [docs/olympus-framework-architecture.pdf](docs/olympus-framework-architecture.pdf) | Canonical product architecture |
-| [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) | Phased plan + code pointers |
-| [packages/olympus/README.md](packages/olympus/README.md) | Package usage and sprint notes |
+| [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) | Phased plan + pointers to code |
+| [packages/olympus/README.md](packages/olympus/README.md) | Package-focused usage and version notes |
 
 ---
 
-## Contributing
+## Contributing and quality
 
-Develop on feature branches; integrate via PRs to **`main`**. CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+- **Branches:** develop on feature branches; default integration target is **`main`** per your workflow.
+- **CI:** see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-Register new `state_schema` / `output_schema` names with `olympus.schema_registry` (or `register_*` helpers) before running pipelines that reference them.
+If you extend agents or state types, register schemas with `olympus.schema_registry` (or the existing `register_*` helpers) before running pipelines that reference them.

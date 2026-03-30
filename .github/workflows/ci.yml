@@ -22,3 +22,20 @@ jobs:
           uv run ruff check src tests
           uv run ruff format --check src tests
           uv run pytest -q
+
+  tuning-ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/tuning-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/tuning-ui/package-lock.json
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build

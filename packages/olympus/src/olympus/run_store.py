@@ -202,6 +202,81 @@ class RunStore:
             overall_score=row["overall_score"],
         )
 
+    def list_runs(self, *, limit: int = 100) -> list[RunRecord]:
+        limit = min(max(limit, 1), 500)
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM runs ORDER BY started_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [
+            RunRecord(
+                run_id=r["run_id"],
+                pipeline_name=r["pipeline_name"],
+                pipeline_version=r["pipeline_version"],
+                input_payload=json.loads(r["input_json"]),
+                started_at=r["started_at"],
+                completed_at=r["completed_at"],
+                overall_score=r["overall_score"],
+            )
+            for r in rows
+        ]
+
+    def append_feedback(self, *, run_id: str, payload: dict[str, Any]) -> str:
+        fid = str(uuid.uuid4())
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO feedback (feedback_id, run_id, payload_json, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (fid, run_id, json.dumps(payload), _utc_now()),
+            )
+        return fid
+
+    def list_feedback(self, run_id: str) -> list[dict[str, Any]]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM feedback WHERE run_id = ? ORDER BY created_at",
+                (run_id,),
+            ).fetchall()
+        return [
+            {
+                "feedback_id": r["feedback_id"],
+                "run_id": r["run_id"],
+                "payload": json.loads(r["payload_json"]),
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ]
+
+    def get_agent_call(self, run_id: str, call_id: str) -> AgentCallRecord | None:
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM agent_calls WHERE run_id = ? AND call_id = ?",
+                (run_id, call_id),
+            ).fetchone()
+        if row is None:
+            return None
+        r = row
+        return AgentCallRecord(
+            call_id=r["call_id"],
+            run_id=r["run_id"],
+            agent_name=r["agent_name"],
+            agent_version=r["agent_version"],
+            node_id=r["node_id"],
+            prompt_full=r["prompt_full"],
+            response_full=r["response_full"],
+            tool_calls_json=json.loads(r["tool_calls_json"]),
+            input_tokens=r["input_tokens"],
+            output_tokens=r["output_tokens"],
+            latency_ms=r["latency_ms"],
+            score=r["score"],
+            score_feedback=r["score_feedback"],
+            retry_count=r["retry_count"],
+            timestamp=r["timestamp"],
+        )
+
     def list_agent_calls(self, run_id: str) -> list[AgentCallRecord]:
         with self._conn() as conn:
             rows = conn.execute(
