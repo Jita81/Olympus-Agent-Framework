@@ -1,0 +1,8 @@
+name: lethe-slice
+version: "1.0.0"
+description: Sprint 1 — single-node Lethe pipeline (index + memory)
+state_schema: LethePipelineState
+nodes:
+  - agent: lethe
+    id: index_and_search
+edges: []

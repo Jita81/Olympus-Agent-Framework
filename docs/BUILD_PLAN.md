@@ -85,6 +85,10 @@ Lethe establishes indexing, embeddings, and the first real tool surface.
 
 **Exit criteria:** Pipeline slice runs Lethe against a sample repo; index and search work locally; calls appear in run log with scores.
 
+**Implemented in repo:** `packages/olympus/examples/lethe/` (`lethe.yaml`, `pipeline.yaml`), `olympus.indexing`, `olympus.lethe_tools`, Merkle in `olympus.merkle`, tool context + optional `--index-repo` on `run_pipeline` / CLI. Run:
+
+`uv run olympus run --register-lethe --index-repo --pipeline examples/lethe/pipeline.yaml --agents examples/lethe/agents --repo-path <repo>`
+
 ---
 
 ## Sprint 2+ — Remaining heroes (Repo Analyser / Athena)

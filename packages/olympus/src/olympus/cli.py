@@ -10,7 +10,11 @@ from pathlib import Path
 from olympus.conditions import default_demo_conditions
 from olympus.pipeline import run_pipeline
 from olympus.run_store import RunStore
-from olympus.schema_registry import default_demo_schemas, resolve_state_schema
+from olympus.schema_registry import (
+    default_demo_schemas,
+    register_lethe_schemas,
+    resolve_state_schema,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -51,6 +55,38 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Register built-in DemoPipelineState / demo conditions (Sprint 0 demo)",
     )
+    run_p.add_argument(
+        "--register-lethe",
+        action="store_true",
+        help="Register LethePipelineState / LetheOutput (Sprint 1)",
+    )
+    run_p.add_argument(
+        "--index-repo",
+        action="store_true",
+        help="Build Chroma index from repo_path in initial state before running agents",
+    )
+    run_p.add_argument(
+        "--repo-path",
+        type=Path,
+        default=None,
+        help="For Lethe: repository root to index (default: cwd)",
+    )
+    run_p.add_argument(
+        "--index-query",
+        default="def main",
+        help="For Lethe: default semantic search query seed in state",
+    )
+    run_p.add_argument(
+        "--chroma-path",
+        type=Path,
+        default=None,
+        help="Chroma persistence directory (default: next to SQLite under .olympus/)",
+    )
+    run_p.add_argument(
+        "--embedding-model",
+        default="all-MiniLM-L6-v2",
+        help="sentence-transformers model id for indexing",
+    )
 
     show_p = sub.add_parser("show-run", help="Print run and agent calls from SQLite")
     show_p.add_argument("run_id", type=str)
@@ -67,12 +103,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.register_demo:
             default_demo_schemas()
             default_demo_conditions()
+        if args.register_lethe:
+            register_lethe_schemas()
         from olympus.loader import load_pipeline
 
         pipeline_path = args.pipeline
         pcfg = load_pipeline(pipeline_path)
         state_cls = resolve_state_schema(pcfg.state_schema)
-        initial = state_cls(task=args.task)
+        if pcfg.state_schema == "LethePipelineState":
+            rp = (args.repo_path or Path.cwd()).resolve()
+            initial = state_cls(repo_path=str(rp), index_query=args.index_query)
+        else:
+            initial = state_cls(task=args.task)
 
         final, run_id = run_pipeline(
             pipeline_path=pipeline_path,
@@ -81,6 +123,10 @@ def main(argv: list[str] | None = None) -> int:
             model=args.model,
             db_path=args.db,
             register_demo=False,
+            register_lethe=False,
+            index_repo=args.index_repo,
+            chroma_path=args.chroma_path,
+            embedding_model=args.embedding_model,
         )
         print(json.dumps({"run_id": run_id, "final_state": final.model_dump()}, indent=2))
         return 0
