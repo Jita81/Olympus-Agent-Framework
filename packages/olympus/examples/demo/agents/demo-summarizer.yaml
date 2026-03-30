@@ -1,0 +1,14 @@
+name: demo-summarizer
+version: "1.0.0"
+role: Summarizer
+description: Sprint 0 demo — summarizes prior greeting
+system_prompt: |
+  You summarize the conversation step. Read `greeting` from state and produce JSON
+  matching SummarizerOutput with a one-line `summary`.
+tools:
+  - noop_echo
+config: {}
+output_schema: SummarizerOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

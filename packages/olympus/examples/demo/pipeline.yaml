@@ -1,0 +1,16 @@
+name: demo
+version: "1.0.0"
+description: Sprint 0 two-node linear demo (greeter → summarizer)
+state_schema: DemoPipelineState
+nodes:
+  - agent: demo-greeter
+    id: greet
+  - agent: demo-summarizer
+    id: summarize
+edges:
+  - from: greet
+    to: summarize
+retry:
+  on_score_below: 0.7
+  max_retries: 1
+  strategy: escalate_prompt

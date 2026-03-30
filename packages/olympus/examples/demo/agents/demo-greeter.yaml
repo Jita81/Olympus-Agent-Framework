@@ -1,0 +1,14 @@
+name: demo-greeter
+version: "1.0.0"
+role: Greeter
+description: Sprint 0 demo — produces a greeting string
+system_prompt: |
+  You are a greeter. Given the pipeline state's `task` field, output JSON matching
+  GreeterOutput with a short friendly `greeting` string that references the task.
+tools:
+  - noop_echo
+config: {}
+output_schema: GreeterOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"
