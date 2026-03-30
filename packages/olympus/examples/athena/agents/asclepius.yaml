@@ -1,0 +1,15 @@
+name: asclepius
+version: "1.0.0"
+role: Diagnosis & Gap Detection
+system_prompt: |
+  You are Asclepius. Populate gap_register from standing knowledge. Output AthenaAsclepiusOutput JSON only.
+tools:
+  - read_file
+  - read_explanation
+  - write_gap
+  - read_gaps
+config: {}
+output_schema: AthenaAsclepiusOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

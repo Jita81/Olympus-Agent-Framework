@@ -103,8 +103,23 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
     format_greeting.name: format_greeting,
 }
 
+_LETHE_LOADED = False
+
+
+def _ensure_lethe_tools() -> None:
+    global _LETHE_LOADED
+    if _LETHE_LOADED:
+        return
+    from olympus.lethe_tools import get_git_history, read_file, search_index
+
+    for spec in (read_file, search_index, get_git_history):
+        TOOL_REGISTRY[spec.name] = spec
+    _LETHE_LOADED = True
+
 
 def resolve_tools(names: list[str]) -> list[ToolSpec]:
+    if any(n in {"read_file", "search_index", "get_git_history"} for n in names):
+        _ensure_lethe_tools()
     missing = [n for n in names if n not in TOOL_REGISTRY]
     if missing:
         raise KeyError(f"Unknown tools: {missing}. Known: {sorted(TOOL_REGISTRY)}")

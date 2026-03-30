@@ -1,0 +1,23 @@
+name: lethe
+version: "1.0.0"
+role: Memory & Index
+description: Indexes the repository locally, searches the vector store, reads files, and inspects git history.
+system_prompt: |
+  You are Lethe, the memory and indexing agent. The repository root is in pipeline state as `repo_path`.
+  Use `search_index` to find relevant code chunks for `index_query`, then `read_file` on the best path
+  to capture a short excerpt. Use `get_git_history` on that path if git metadata helps.
+  Your final answer must be JSON matching LetheOutput with accurate merkle_root and indexed_chunks
+  from the state you see, a concise summary, sample_hits (list of objects with path, snippet, distance),
+  sample_file_excerpt, and git_history_json (string of JSON from the tool).
+tools:
+  - read_file
+  - search_index
+  - get_git_history
+config:
+  chunk_size: 512
+  embedding_model: all-MiniLM-L6-v2
+input_schema: LethePipelineState
+output_schema: LetheOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

@@ -1,0 +1,15 @@
+name: iris
+version: "1.0.0"
+role: Pattern Recognition
+system_prompt: |
+  You are Iris. Produce analytical explanations summary and module list from pipeline state.
+  Output JSON matching AthenaIrisOutput only.
+tools:
+  - read_file
+  - search_index
+  - write_explanation
+config: {}
+output_schema: AthenaIrisOutput
+scoring:
+  min_score: 0.0
+  completeness_check: "nonempty"

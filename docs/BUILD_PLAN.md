@@ -85,6 +85,10 @@ Lethe establishes indexing, embeddings, and the first real tool surface.
 
 **Exit criteria:** Pipeline slice runs Lethe against a sample repo; index and search work locally; calls appear in run log with scores.
 
+**Implemented in repo:** `packages/olympus/examples/lethe/` (`lethe.yaml`, `pipeline.yaml`), `olympus.indexing`, `olympus.lethe_tools`, Merkle in `olympus.merkle`, tool context + optional `--index-repo` on `run_pipeline` / CLI. Run:
+
+`uv run olympus run --register-lethe --index-repo --pipeline examples/lethe/pipeline.yaml --agents examples/lethe/agents --repo-path <repo>`
+
 ---
 
 ## Sprint 2+ — Remaining heroes (Repo Analyser / Athena)
@@ -97,6 +101,8 @@ For each agent (Iris, Pallas, Asclepius, Daedalus, Nike, Tyche, Arete, orchestra
 - Wire **orchestrator** agent for final context package assembly.
 
 **Exit criteria:** Full Athena pipeline produces the intended structured context package type; run log captures all heroes; retry policies validated on at least one edge case.
+
+**Implemented in repo (Sprint 2 slice):** `packages/olympus/examples/athena/` (`pipeline.yaml`, nine agent YAMLs), `olympus.athena_state`, `olympus.athena_tools` (stubs), `olympus.athena_conditions`, `olympus.athena_mock` for no-API-key runs. CLI: `--register-athena`. Tests cover full mock graph (9 calls), conditions, and a forced retry path (`tests/test_retry_policy.py`).
 
 ---
 
